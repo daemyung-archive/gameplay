@@ -29,8 +29,6 @@ target_link_libraries(external
   INTERFACE
     ${BULLET_LIBRARIES}
 )
-#
-#message( hmhmhm + ${BULLET_DEFINITIONS})
 
 #------------------------------------------------------------------------------
 
