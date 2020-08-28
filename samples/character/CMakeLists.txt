@@ -1,9 +1,38 @@
-set(GAME_NAME sample-character)
+#
+# This file is part of the "gameplay" project
+# See "LICENSE" for license information.
+#
 
-set(GAME_SRC
+#------------------------------------------------------------------------------
+
+if(CMAKE_SYSTEM_NAME MATCHES Windows)
+    set(GAMEPLAY_EXE_TARGET WIN32)
+elseif(CMAKE_SYSTEM_NAME MATCHES Darwin)
+    set(GAMEPLAY_EXE_TARGET MACOSX_BUNDLE)
+endif()
+
+#------------------------------------------------------------------------------
+
+add_executable(character ${GAMEPLAY_EXE_TARGET}
     src/CharacterGame.cpp
     src/CharacterGame.h
 )
+
+#------------------------------------------------------------------------------
+
+target_link_libraries(character
+  PRIVATE
+    gameplay
+)
+
+#------------------------------------------------------------------------------
+
+set_target_properties(character
+  PROPERTIES
+    CXX_STANDARD 17
+)
+
+#------------------------------------------------------------------------------
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     COPY_RES_MAC(GAME_RES ${CMAKE_SOURCE_DIR}/samples/character res/*)
@@ -28,28 +57,4 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set( PLIST_TEMPLATE sample-racer-macosx.plist )
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
-add_executable(${GAME_NAME} ${EXEC_TYPE}
-        ${GAME_SRC} ${Apple_Resources}
-        )
-
-target_link_libraries(${GAME_NAME} ${GAMEPLAY_LIBRARIES})
-
-if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-
-    set_target_properties(${GAME_NAME} PROPERTIES
-            OUTPUT_NAME "${GAME_NAME}"
-            CLEAN_DIRECT_OUTPUT 1
-            )
-
-    source_group(res FILES ${GAME_RES} ${GAMEPLAY_RES} ${GAMEPLAY_RES_SHADERS} ${GAMEPLAY_RES_UI})
-    source_group(src FILES ${GAME_SRC})
-
-    COPY_RES( ${GAME_NAME} )
-    COPY_RES_EXTRA( ${GAME_NAME} ${CMAKE_SOURCE_DIR}/gameplay
-            res/logo_powered_white.png
-            res/shaders/*
-            res/ui/*
-            )
-endif(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-# Just use the PNG config file (most compatible)
-configure_file( game.dxt.config game.config COPYONLY )
+#------------------------------------------------------------------------------

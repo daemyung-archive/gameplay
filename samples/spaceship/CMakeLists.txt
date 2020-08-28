@@ -1,9 +1,39 @@
-set(GAME_NAME sample-spaceship)
+#
+# This file is part of the "gameplay" project
+# See "LICENSE" for license information.
+#
 
-set(GAME_SRC
+#------------------------------------------------------------------------------
+
+if(CMAKE_SYSTEM_NAME MATCHES Windows)
+    set(GAMEPLAY_EXE_TARGET WIN32)
+elseif(CMAKE_SYSTEM_NAME MATCHES Darwin)
+    set(GAMEPLAY_EXE_TARGET MACOSX_BUNDLE)
+endif()
+
+#------------------------------------------------------------------------------
+
+add_executable(spaceship ${GAMEPLAY_EXE_TARGET}
     src/SpaceshipGame.cpp
     src/SpaceshipGame.h
 )
+
+#------------------------------------------------------------------------------
+
+target_link_libraries(spaceship
+  PRIVATE
+    gameplay
+)
+
+#------------------------------------------------------------------------------
+
+set_target_properties(spaceship
+  PROPERTIES
+    CXX_STANDARD 17
+)
+
+#------------------------------------------------------------------------------
+
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     COPY_RES_MAC(GAME_RES ${CMAKE_SOURCE_DIR}/samples/spaceship res/*)
@@ -29,26 +59,4 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set( PLIST_TEMPLATE sample-racer-macosx.plist )
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
-add_executable(${GAME_NAME} ${EXEC_TYPE}
-    ${GAME_SRC} ${Apple_Resources}
-)
-
-target_link_libraries(${GAME_NAME} ${GAMEPLAY_LIBRARIES})
-
-if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-
-    set_target_properties(${GAME_NAME} PROPERTIES
-            OUTPUT_NAME "${GAME_NAME}"
-            CLEAN_DIRECT_OUTPUT 1
-            )
-
-    source_group(res FILES ${GAME_RES} ${GAMEPLAY_RES} ${GAMEPLAY_RES_SHADERS} ${GAMEPLAY_RES_UI})
-    source_group(src FILES ${GAME_SRC})
-
-    COPY_RES( ${GAME_NAME} )
-    COPY_RES_EXTRA( ${GAME_NAME} ${CMAKE_SOURCE_DIR}/gameplay
-            res/logo_powered_white.png
-            res/shaders/*
-            res/ui/*
-            )
-endif(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+#------------------------------------------------------------------------------

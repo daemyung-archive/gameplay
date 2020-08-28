@@ -1,6 +1,19 @@
-set(GAME_NAME sample-browser)
+#
+# This file is part of the "gameplay" project
+# See "LICENSE" for license information.
+#
 
-set(GAME_SRC
+#------------------------------------------------------------------------------
+
+if(CMAKE_SYSTEM_NAME MATCHES Windows)
+    set(GAMEPLAY_EXE_TARGET WIN32)
+elseif(CMAKE_SYSTEM_NAME MATCHES Darwin)
+    set(GAMEPLAY_EXE_TARGET MACOSX_BUNDLE)
+endif()
+
+#------------------------------------------------------------------------------
+
+add_executable(browser ${GAMEPLAY_EXE_TARGET}
     src/Audio3DSample.cpp
     src/Audio3DSample.h
     src/AudioSample.cpp
@@ -52,9 +65,23 @@ set(GAME_SRC
     src/TriangleSample.cpp
     src/TriangleSample.h
     src/WaterSample.cpp
-    src/WaterSample.h
+    src/WaterSample.h)
+
+#------------------------------------------------------------------------------
+
+target_link_libraries(browser
+  PRIVATE
+    gameplay
 )
 
+#------------------------------------------------------------------------------
+
+set_target_properties(browser
+  PROPERTIES
+    CXX_STANDARD 17
+)
+
+#------------------------------------------------------------------------------
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     MESSAGE("Game name is ${GAME_NAME}")
@@ -80,28 +107,5 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set( PLIST_TEMPLATE ${GAME_NAME}-macosx.plist )
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
-add_executable(${GAME_NAME} ${EXEC_TYPE}
-        ${GAME_SRC}
-        ${Apple_Resources}
-        )
+#------------------------------------------------------------------------------
 
-target_link_libraries(${GAME_NAME} ${GAMEPLAY_LIBRARIES})
-
-
-set_target_properties(${GAME_NAME} PROPERTIES
-    OUTPUT_NAME "${GAME_NAME}"
-    CLEAN_DIRECT_OUTPUT 1
-)
-
-if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-
-    source_group(res FILES ${GAME_RES} ${GAMEPLAY_RES} ${GAMEPLAY_RES_SHADERS} ${GAMEPLAY_RES_UI})
-    source_group(src FILES ${GAME_SRC})
-
-    COPY_RES( ${GAME_NAME} )
-    COPY_RES_EXTRA( ${GAME_NAME} ${CMAKE_SOURCE_DIR}/gameplay
-            res/logo_powered_white.png
-            res/shaders/*
-            res/ui/*
-            )
-endif(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

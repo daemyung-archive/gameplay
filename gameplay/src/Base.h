@@ -205,7 +205,7 @@ extern int strcmpnocase(const char* s1, const char* s2);
 
 // Scripting
 using std::va_list;
-#include <lua/lua.hpp>
+#include <lua.hpp>
 
 #define WINDOW_VSYNC        1
 
@@ -227,7 +227,6 @@ using std::va_list;
     #define GP_USE_VAO
 #elif WIN32
         #define WIN32_LEAN_AND_MEAN
-        #define GLEW_STATIC
         #include <GL/glew.h>
         #define GP_USE_VAO
 #elif __linux__
