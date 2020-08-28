@@ -34,29 +34,29 @@ set_target_properties(spaceship
 
 #------------------------------------------------------------------------------
 
-
-if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    COPY_RES_MAC(GAME_RES ${CMAKE_SOURCE_DIR}/samples/spaceship res/*)
-    COPY_RES_MAC(GAMEPLAY_RES ${CMAKE_SOURCE_DIR}/gameplay
-            res/shaders/* res/ui/* res/logo_powered_white.png)
-    set(Apple_Resources
-            ../../gameplay/res/logo_powered_white.png
-            ${GAME_RES}
-            ${GAMEPLAY_RES}
-            game.config)
-    SET(EXEC_TYPE MACOSX_BUNDLE)
-
-    SET_SOURCE_FILES_PROPERTIES(
-            game.config
-            PROPERTIES
-            MACOSX_PACKAGE_LOCATION Resources
-    )
-    set( MACOSX_BUNDLE_INFO_STRING "\"${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}\",\nCopyright 2016 gameplay3d contributors" )
-    set( MACOSX_BUNDLE_SHORT_VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}" )
-    set( MACOSX_BUNDLE_LONG_VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
-    set( MACOSX_BUNDLE_BUNDLE_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
-    set( MACOSX_BUNDLE_COPYRIGHT "(C) gameplay3d contributors" )
-    set( PLIST_TEMPLATE sample-racer-macosx.plist )
-endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+# FIX ME: Resources should be copied.
+#if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+#    COPY_RES_MAC(GAME_RES ${CMAKE_SOURCE_DIR}/samples/spaceship res/*)
+#    COPY_RES_MAC(GAMEPLAY_RES ${CMAKE_SOURCE_DIR}/gameplay
+#            res/shaders/* res/ui/* res/logo_powered_white.png)
+#    set(Apple_Resources
+#            ../../gameplay/res/logo_powered_white.png
+#            ${GAME_RES}
+#            ${GAMEPLAY_RES}
+#            game.config)
+#    SET(EXEC_TYPE MACOSX_BUNDLE)
+#
+#    SET_SOURCE_FILES_PROPERTIES(
+#            game.config
+#            PROPERTIES
+#            MACOSX_PACKAGE_LOCATION Resources
+#    )
+#    set( MACOSX_BUNDLE_INFO_STRING "\"${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}\",\nCopyright 2016 gameplay3d contributors" )
+#    set( MACOSX_BUNDLE_SHORT_VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}" )
+#    set( MACOSX_BUNDLE_LONG_VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
+#    set( MACOSX_BUNDLE_BUNDLE_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
+#    set( MACOSX_BUNDLE_COPYRIGHT "(C) gameplay3d contributors" )
+#    set( PLIST_TEMPLATE sample-racer-macosx.plist )
+#endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 #------------------------------------------------------------------------------

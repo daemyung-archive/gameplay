@@ -252,7 +252,6 @@ target_include_directories(gameplay
 target_link_libraries(gameplay
   PUBLIC
     external
-    OpenGL32.lib
 )
 
 #------------------------------------------------------------------------------
@@ -559,8 +558,22 @@ if(CMAKE_SYSTEM_NAME MATCHES Windows)
 elseif(CMAKE_SYSTEM_NAME MATCHES Darwin)
     target_sources(gameplay
       PRIVATE
-        src/PlatformMacOSX.cpp
-        src/gameplay-main-macosx.cpp
+        src/PlatformMacOSX.mm
+        src/gameplay-main-macosx.mm
+    )
+
+    target_compile_options(gameplay
+      PUBLIC
+        "-objc++"
+    )
+
+    target_link_libraries(gameplay
+      PUBLIC
+        "-framework Cocoa"
+        "-framework QuartzCore"
+        "-framework CoreVideo"
+        "-framework IOKit"
+        "-framework GameKit"
     )
 elseif(CMAKE_SYSTEM_NAME MATCHES Linux)
     target_sources(gameplay

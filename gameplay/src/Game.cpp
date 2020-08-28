@@ -356,7 +356,7 @@ void Game::exit()
 
 void Game::frame()
 {
-    if (!_initialized)
+    if (!_initialized && _state != UNINITIALIZED)
     {
         // Perform lazy first time initialization
         initialize();

@@ -737,7 +737,7 @@ double getMachTimeInMilliseconds()
 {
     [gameLock lock];
     
-    NSSize size = [ [ _window contentView ] frame ].size;
+    NSSize size = [ [ __view.window contentView ] frame ].size;
     __width = size.width;
     __height = size.height;
     CGLContextObj cglContext = (CGLContextObj)[[self openGLContext] CGLContextObj];
@@ -1669,9 +1669,10 @@ Platform* Platform::create(Game* game)
 
 int Platform::enterMessagePump()
 {
-    NSString* bundlePath = [[NSBundle mainBundle] bundlePath];
-    NSString* path = [bundlePath stringByAppendingString:@"/Contents/Resources/"];
-    FileSystem::setResourcePath([path cStringUsingEncoding:NSASCIIStringEncoding]);
+    // FIX ME: Resources should be pakced into bundle.
+    // NSString* bundlePath = [[NSBundle mainBundle] bundlePath];
+    // NSString* path = [bundlePath stringByAppendingString:@"/Contents/Resources/"];
+    // FileSystem::setResourcePath([path cStringUsingEncoding:NSASCIIStringEncoding]);
     
     // Read window settings from config.
     if (_game->getConfig())

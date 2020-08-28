@@ -75,16 +75,23 @@ find_package(GLEW REQUIRED)
 
 target_link_libraries(external
   INTERFACE
-    GLEW::glew
+    GLEW::GLEW
 )
 
 #------------------------------------------------------------------------------
 
 find_package(libpng CONFIG REQUIRED)
 
-target_link_libraries(external
-  INTERFACE
-    png
+if(CMAKE_SYSTEM_NAME MATCHES Windows)
+  target_link_libraries(external
+    INTERFACE
+      png
+  )
+else()
+  target_link_libraries(external
+    INTERFACE
+      png_static
 )
+endif()
 
 #------------------------------------------------------------------------------
