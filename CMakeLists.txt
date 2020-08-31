@@ -13,7 +13,7 @@ project(gameplay VERSION 3.0.0)
 
 #------------------------------------------------------------------------------
 
-option(GAMEPLAY_USE_LUA_BINDING "Use Lua binding to gameplay" ON)
+option(GAMEPLAY_USE_LUA_BINDING "Use Lua binding to gameplay" OFF)
 option(GAMEPLAY_BUILD_TOOL "Build gameplay tool" OFF)
 option(GAMEPLAY_BUILD_SAMPLE "Build gameplay sample" ON)
 
