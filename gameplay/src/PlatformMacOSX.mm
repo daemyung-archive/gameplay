@@ -708,7 +708,7 @@ double getMachTimeInMilliseconds()
 @end
 
 
-@interface View : NSOpenGLView <NSWindowDelegate>
+@interface View : NSView<NSWindowDelegate>
 {
 @public
     CVDisplayLinkRef displayLink;
@@ -717,15 +717,115 @@ double getMachTimeInMilliseconds()
 @protected
     Game* _game;
     unsigned int _gestureEvents;
-}    
-- (void) detectGamepads: (Game*) game;
+}
+- (BOOL)SetupDisplayLinkForScreen:(NSScreen*)screen;
+- (void)Render;
+- (void)detectGamepads: (Game*) game;
 
 @end
 
 
 @implementation View
 
--(void)windowWillClose:(NSNotification*)note 
+- (BOOL)SetupDisplayLinkForScreen:(NSScreen*)screen
+{
+    // FIXME:
+    // _game->run();
+
+    if (__fullscreen)
+    {
+        [[self window] setLevel: NSMainMenuWindowLevel+1];
+        [[self window] setHidesOnDeactivate:YES];
+    }
+    else
+    {
+        [[self window] setLevel: NSNormalWindowLevel];
+    }
+    [[self window] makeKeyAndOrderFront: self];
+    [[self window] setTitle: [NSString stringWithUTF8String: __title ? __title : ""]];
+
+   // Create a display link capable of being used with all active displays
+    CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
+
+    // Set the renderer output callback function
+    CVDisplayLinkSetOutputCallback(displayLink, &MyDisplayLinkCallback, self);
+
+    // Associate the display link with the display on which the
+    // view resides
+    CGDirectDisplayID viewDisplayID = (CGDirectDisplayID)[screen.deviceDescription[@"NSScreenNumber"] unsignedIntegerValue];
+    CVDisplayLinkSetCurrentCGDisplay(displayLink, viewDisplayID);
+
+    // Activate the display link
+    CVDisplayLinkStart(displayLink);
+}
+
+- (void)Render
+{
+    [gameLock lock];
+
+    if (_game)
+    {
+        [self detectGamepads: _game];
+
+        _game->frame();
+    }
+
+    [gameLock unlock];
+}
+
+- (instancetype)initWithFrame:(NSRect)frameRect;
+{
+    self = [super initWithFrame:frameRect];
+
+    if (self)
+    {
+        self.wantsLayer = YES;
+        self.layer = [CAMetalLayer layer];
+
+        _game = Game::getInstance();
+
+        Properties* config = _game->getConfig()->getNamespace("window", true);
+        int samples = config ? config->getInt("samples") : 0;
+        if (samples < 0)
+            samples = 0;
+
+        __multiSampling = samples > 0;
+
+        gameLock = [[NSRecursiveLock alloc] init];
+        __timeStart = getMachTimeInMilliseconds();
+    }
+
+    return self;
+}
+
+- (void) dealloc
+{
+    [gameLock lock];
+
+    // Release the display link
+    CVDisplayLinkStop(displayLink);
+    CVDisplayLinkRelease(displayLink);
+    _game->exit();
+
+    [gameLock unlock];
+
+    [super dealloc];
+}
+
+- (void)windowDidResize:(NSNotification *)notification
+{
+    [gameLock lock];
+
+    NSSize size = __view.frame.size;
+    __width = size.width;
+    __height = size.height;
+
+    gameplay::Platform::resizeEventInternal((unsigned int)__width, (unsigned int)__height);
+
+    [gameLock unlock];
+}
+
+- (void)windowWillClose:(NSNotification *)notification;
 {
     [gameLock lock];
     _game->exit();
@@ -733,28 +833,11 @@ double getMachTimeInMilliseconds()
     [[NSApplication sharedApplication] terminate:self];
 }
 
-- (void)reshape
-{
-    [gameLock lock];
-    
-    NSSize size = [ [ __view.window contentView ] frame ].size;
-    __width = size.width;
-    __height = size.height;
-    CGLContextObj cglContext = (CGLContextObj)[[self openGLContext] CGLContextObj];
-    GLint dim[2] = {__width, __height};
-    CGLSetParameter(cglContext, kCGLCPSurfaceBackingSize, dim);
-    CGLEnable(cglContext, kCGLCESurfaceBackingSize);
-    
-    gameplay::Platform::resizeEventInternal((unsigned int)__width, (unsigned int)__height);
-    
-    [gameLock unlock];
-}
-
 - (CVReturn) getFrameForTime:(const CVTimeStamp*)outputTime
 {
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-    
-    [self update];
+
+    [self Render];
     
     [pool release];
     
@@ -795,166 +878,11 @@ double getMachTimeInMilliseconds()
     [__activeGamepads removeObjectsForKeys:deadGamepads];
 }
 
--(void) update
-{       
-    [gameLock lock];
-
-    [[self openGLContext] makeCurrentContext];
-    CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
-    if (_game)
-    {
-        [self detectGamepads: _game];
-        
-        _game->frame();
-    }
-    CGLFlushDrawable((CGLContextObj)[[self openGLContext] CGLContextObj]);
-    CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);  
-
-    [gameLock unlock];
-}
-
 static CVReturn MyDisplayLinkCallback(CVDisplayLinkRef displayLink, const CVTimeStamp* now, const CVTimeStamp* outputTime, 
                                       CVOptionFlags flagsIn, CVOptionFlags* flagsOut, void* displayLinkContext)
 {
     CVReturn result = [(View*)displayLinkContext getFrameForTime:outputTime];
     return result;
-}
-
-- (id) initWithFrame: (NSRect) frame
-{
-    _game = Game::getInstance();
-    
-    Properties* config = _game->getConfig()->getNamespace("window", true);
-    int samples = config ? config->getInt("samples") : 0;
-    if (samples < 0)
-        samples = 0;
-    
-    // Note: Keep multisampling attributes at the start of the attribute lists since code below
-    // assumes they are array elements 0 through 4.
-    NSOpenGLPixelFormatAttribute windowedAttrs[] = 
-    {
-        NSOpenGLPFAMultisample,
-        NSOpenGLPFASampleBuffers, static_cast<NSOpenGLPixelFormatAttribute>(samples ? 1 : 0),
-        NSOpenGLPFASamples, static_cast<NSOpenGLPixelFormatAttribute>(samples),
-        NSOpenGLPFAAccelerated,
-        NSOpenGLPFADoubleBuffer,
-        NSOpenGLPFAColorSize, 32,
-        NSOpenGLPFADepthSize, 24,
-        NSOpenGLPFAAlphaSize, 8,
-        NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersionLegacy,
-        0
-    };
-    NSOpenGLPixelFormatAttribute fullscreenAttrs[] = 
-    {
-        NSOpenGLPFAMultisample,
-        NSOpenGLPFASampleBuffers, static_cast<NSOpenGLPixelFormatAttribute>(samples ? 1 : 0),
-        NSOpenGLPFASamples, static_cast<NSOpenGLPixelFormatAttribute>(samples),
-        NSOpenGLPFADoubleBuffer,
-        NSOpenGLPFAScreenMask, (NSOpenGLPixelFormatAttribute)CGDisplayIDToOpenGLDisplayMask(CGMainDisplayID()),
-    #if (__MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_7)
-        NSOpenGLPFAFullScreen,
-    #endif
-        NSOpenGLPFAColorSize, 32,
-        NSOpenGLPFADepthSize, 24,
-        NSOpenGLPFAAlphaSize, 8,
-        NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersionLegacy,
-        0
-    };
-    NSOpenGLPixelFormatAttribute* attrs = __fullscreen ? fullscreenAttrs : windowedAttrs;
-    
-    __multiSampling = samples > 0;
-
-    // Try to choose a supported pixel format
-    NSOpenGLPixelFormat* pf = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
-    if (!pf)
-    {
-        bool valid = false;
-        while (!pf && samples > 0)
-        {
-            samples /= 2;
-            attrs[2] = samples ? 1 : 0;
-            attrs[4] = samples;
-            pf = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
-            if (pf)
-            {
-                valid = true;
-                break;
-            }
-        }
-
-        __multiSampling = samples > 0;
-        
-        if (!valid)
-        {
-            NSLog(@"OpenGL pixel format not supported.");
-            GP_ERROR("Failed to create a valid OpenGL pixel format.");
-            return nil;
-        }
-    }
-    
-    if ((self = [super initWithFrame:frame pixelFormat:[pf autorelease]])) 
-    {
-        gameLock = [[NSRecursiveLock alloc] init];
-        __timeStart = getMachTimeInMilliseconds();
-    }
-    
-    return self;
-}
-
-- (void) prepareOpenGL
-{
-    [super prepareOpenGL];
-    
-    _game->run();
-    
-    if (__fullscreen)
-    {
-        [[self window] setLevel: NSMainMenuWindowLevel+1];
-        [[self window] setHidesOnDeactivate:YES]; 
-    }
-    else
-    {
-        [[self window] setLevel: NSNormalWindowLevel];
-    }
-    [[self window] makeKeyAndOrderFront: self];
-    [[self window] setTitle: [NSString stringWithUTF8String: __title ? __title : ""]];
-    
-    // Make all the OpenGL calls to setup rendering and build the necessary rendering objects
-    [[self openGLContext] makeCurrentContext];
-    // Synchronize buffer swaps with vertical refresh rate
-    GLint swapInt = __vsync ? 1 : 0;
-    [[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
-    
-    // Create a display link capable of being used with all active displays
-    CVDisplayLinkCreateWithActiveCGDisplays(&displayLink);
-    
-    // Set the renderer output callback function
-    CVDisplayLinkSetOutputCallback(displayLink, &MyDisplayLinkCallback, self);
-    
-    CGLContextObj cglContext = (CGLContextObj)[[self openGLContext] CGLContextObj];
-    CGLPixelFormatObj cglPixelFormat = (CGLPixelFormatObj)[[self pixelFormat] CGLPixelFormatObj];
-    CVDisplayLinkSetCurrentCGDisplayFromOpenGLContext(displayLink, cglContext, cglPixelFormat);
-    
-    GLint dim[2] = {__width, __height};
-    CGLSetParameter(cglContext, kCGLCPSurfaceBackingSize, dim);
-    CGLEnable(cglContext, kCGLCESurfaceBackingSize);
-    
-    // Activate the display link
-    CVDisplayLinkStart(displayLink);
-}
-
-- (void) dealloc
-{   
-    [gameLock lock];
-    
-    // Release the display link
-    CVDisplayLinkStop(displayLink);
-    CVDisplayLinkRelease(displayLink);
-    _game->exit();
-    
-    [gameLock unlock];
-
-    [super dealloc];
 }
 
 - (void)resumeDisplayRenderer 
@@ -1707,7 +1635,8 @@ int Platform::enterMessagePump()
 
     NSAutoreleasePool* pool = [NSAutoreleasePool new];
     NSApplication* app = [NSApplication sharedApplication];
-    NSRect screenBounds = [[NSScreen mainScreen] frame];
+    NSScreen* screen = [NSScreen mainScreen];
+    NSRect screenBounds = [screen frame];
     NSRect viewBounds = NSMakeRect(0, 0, __width, __height);
     
     __view = [[View alloc] initWithFrame:viewBounds];
@@ -1743,6 +1672,7 @@ int Platform::enterMessagePump()
     [window setAcceptsMouseMovedEvents:YES];
     [window setContentView:__view];
     [window setDelegate:__view];
+    [__view SetupDisplayLinkForScreen:screen];
     [__view release];
     
     [app run];
