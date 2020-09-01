@@ -1,0 +1,3 @@
+[submodule "external/vkut"]
+	path = external/vkut
+	url = https://github.com/daemyung/vkut.git

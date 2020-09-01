@@ -9,10 +9,6 @@ add_library(external INTERFACE)
 
 #------------------------------------------------------------------------------
 
-include(FindLua)
-
-#------------------------------------------------------------------------------
-
 find_package(Bullet CONFIG REQUIRED)
 
 target_include_directories(external
@@ -40,6 +36,8 @@ target_link_libraries(external
 )
 
 #------------------------------------------------------------------------------
+
+include(FindLua)
 
 find_package(Lua REQUIRED)
 
@@ -91,7 +89,16 @@ else()
   target_link_libraries(external
     INTERFACE
       png_static
-)
+  )
 endif()
+
+#------------------------------------------------------------------------------
+
+add_subdirectory(vkut)
+
+target_link_libraries(external
+  INTERFACE
+    vkut
+)
 
 #------------------------------------------------------------------------------
